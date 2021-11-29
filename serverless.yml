@@ -1,0 +1,86 @@
+service: ${self:custom.vars.Name}-application
+
+plugins:
+  - serverless-s3-deploy
+  - serverless-cloudfront-invalidate
+
+provider:
+  name: aws
+  stage: dev
+  runtime: nodejs12.x
+  region: us-east-1
+
+custom:
+  cf:
+    originId: S3-${self:custom.vars.Name}
+
+  assets:
+    targets:
+      - bucket: 
+          Ref: PbsFrontendBucket
+        acl: public-read
+        empty: true
+        files:
+          - source: build/
+            globs: '**'
+
+  cloudfrontInvalidate:
+    - distributionIdKey: PbsFrontendCloudfrontDistributionId 
+      items:
+        - "/*"
+
+resources:
+  Resources:
+    HubBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        AccessControl: Private
+
+    RedBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        AccessControl: Private
+
+    BlueBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        AccessControl: Private
+        
+    CFDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          IPV6Enabled: true
+          DefaultRootObject: 'index.html'
+          Origins:
+            - Id: hub
+              DomainName: !GetAtt HubBucket.DomainName
+              S3OriginConfig:
+                OriginAccessIdentity: ''
+            - Id: red
+              DomainName: !GetAtt RedBucket.DomainName
+              S3OriginConfig:
+                OriginAccessIdentity: ''
+            - Id: blue
+              DomainName: !GetAtt BlueBucket.DomainName
+              S3OriginConfig:
+                OriginAccessIdentity: ''
+          DefaultCacheBehavior:
+            TargetOriginId: ${self:custom.cf.originId}
+            ViewerProtocolPolicy: 'redirect-to-https'
+            AllowedMethods: 
+              - GET
+              - HEAD
+            CachePolicyId: '658327ea-f89d-4fab-a63d-7e88639e58f6'
+          CustomErrorResponses:
+            - ErrorCode: '403'
+              ErrorCachingMinTTL: '0'
+              ResponsePagePath: "/"
+              ResponseCode: '200'
+  
+  Outputs:
+    PbsFrontendCloudfrontDistributionId:
+      Description: CloudFront distribution id.
+      Value:
+        Ref: CFDistribution
