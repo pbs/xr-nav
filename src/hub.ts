@@ -48,16 +48,19 @@ function createLinkCube(hexColor: string, href: string, position: Vector3) {
 
 const redBox = createLinkCube('#f54257', '/red/', new Vector3(-4, 2, 0));
 const blueBox = createLinkCube('#4287f5', '/blue/', new Vector3(4, 2, 0));
+const unityBox = createLinkCube('#37d459', '/unity/', new Vector3(8, 2, 0));
 
 const shadowGenerator = new ShadowGenerator(2048, light);
 shadowGenerator.usePoissonSampling = true;
 shadowGenerator.useExponentialShadowMap = true;
 shadowGenerator.addShadowCaster(redBox);
 shadowGenerator.addShadowCaster(blueBox);
+shadowGenerator.addShadowCaster(unityBox);
 
 scene.registerBeforeRender(() => {
   redBox.rotation.y += 0.01;
   blueBox.rotation.y += 0.01;
+  unityBox.rotation.y += 0.01;
 });
 
 engine.runRenderLoop(() => {
